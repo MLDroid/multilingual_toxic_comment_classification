@@ -1,6 +1,5 @@
 import torch
 from torch.utils.data import Dataset
-from transformers import BertTokenizerFast, DistilBertTokenizerFast, RobertaTokenizerFast
 from transformers import AutoTokenizer
 import pandas as pd
 import numpy as np
@@ -9,30 +8,30 @@ from sklearn.model_selection import train_test_split
 
 import config
 
-def load_df(dataset_fname, sample_ratio=None):
+def load_df(dataset_fname, sample_ratio=None, print_stats=True):
     df = pd.read_csv(dataset_fname)
     # check if the whole DF is needed
     if sample_ratio: df = df.sample(frac=sample_ratio)
     print(f'Loaded dataframe of shape: {df.shape} from {dataset_fname}')
+
+    if print_stats:
+        print_stats_from_df(df, dataset_fname)
     return df
 
 
+def print_stats_from_df(df, fname):
+    abs_pos_neg = df.toxic.value_counts()
+    percent_pos_neg = round(df.toxic.value_counts(normalize=True) * 100, 2)
+    print(f'In DF: {fname}, the ratio of positive and negative samples is as follows:')
+    print(f'Abs values:\n {abs_pos_neg}')
+    print(f'Percentage values:\n {percent_pos_neg}')
 
-def valid_df(dataset_fname, sample_ratio=None, valid_ratio=0.2, save_dfs=True):
-    df = pd.read_csv(dataset_fname)
-    #check if the whole DF is needed
-    if sample_ratio: df = df.sample(frac=sample_ratio)
-    print(f'Loaded dataframe of shape: {df.shape} from {dataset_fname}')
-
-    train_df, valid_df = train_test_split(df, random_state=42, test_size=valid_ratio, shuffle=True)
-
-    if save_dfs:
-        model_name = config.MODEL_NAME.upper().replace('/','-')
-        train_df.to_csv(f'{model_name}_train_df_.csv',index=False)
-        valid_df.to_csv(f'{model_name}_valid_df_.csv',index=False)
-
-    return train_df, valid_df
-
+    if 'lang' in df.columns:
+        abs_lang = df.lang.value_counts()
+        precent_lang = round(df.lang.value_counts(normalize=True)*100, 2)
+        print('The language distribution is as follows:')
+        print(f'Abs values:\n {abs_lang}')
+        print(f'Percentage values:\n {precent_lang}')
 
 
 class dataset(Dataset):
@@ -56,7 +55,7 @@ class dataset(Dataset):
 
 
     def _get_token_ids_attn_mask(self, sentence, lower=False):
-        sentence = sentence.strip()
+        sentence = str(sentence).strip()
         sentence = ' '.join(sentence.split())  # make sure unwanted spaces are removed
         if lower:
             sentence = sentence.lower()

@@ -18,7 +18,7 @@ class bert_classifier(nn.Module):
                 p.requires_grad = False
 
         # Classification layer
-        self.fc = nn.Linear(768, 2)
+        self.fc = nn.Linear(config.CONTEXT_VECTOR_SIZE, 2) #using a simple softmax classifier with one FC layer
 
         #Dropout
         self.dp20 = nn.Dropout(0.2)
