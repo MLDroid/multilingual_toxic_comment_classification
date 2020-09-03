@@ -4,6 +4,7 @@ import time
 from torch.utils.data import DataLoader
 import torch.nn as nn
 from tqdm import tqdm
+import torch.optim as optim
 from transformers import AdamW
 from transformers import get_linear_schedule_with_warmup
 from sklearn.metrics import roc_auc_score, f1_score
@@ -83,7 +84,7 @@ def train_model(net, criterion, optimizer, scheduler, train_loader, test_loader=
 
             # Optimization step
             optimizer.step()
-            scheduler.step()
+            # scheduler.step()
 
             if batch_num % print_every == 0:
                 auc, f1 = get_metrics_from_logits(logits, labels)
@@ -166,29 +167,33 @@ def main():
     #loss function (with weights)
     class_weights = get_class_weigts(train_df)
     class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
-    criterion = nn.CrossEntropyLoss(weight=class_weights)
+    # criterion = nn.CrossEntropyLoss(weight=class_weights)
+    criterion = nn.NLLLoss(weight=class_weights)
 
     #optimizer and scheduler
-    param_optimizer = list(bert_model.named_parameters())
-    no_decay = ["bias", "LayerNorm.bias", "LayerNorm.weight"]
-    optimizer_parameters = [
-        {
-            "params": [
-                p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
-            ],
-            "weight_decay": 0.001,
-        },
-        {
-            "params": [
-                p for n, p in param_optimizer if any(nd in n for nd in no_decay)
-            ],
-            "weight_decay": 0.0,
-        },
-    ]
+    optimizer = optim.Adam(bert_model.parameters(), lr=config.LR)
+    scheduler = None
 
-    num_train_steps = int(len(train_set) / config.BATCH_SIZE * config.NUM_EPOCHS)
-    optimizer = AdamW(optimizer_parameters, lr=config.LR)
-    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=num_train_steps)
+    # param_optimizer = list(bert_model.named_parameters())
+    # no_decay = ["bias", "LayerNorm.bias", "LayerNorm.weight"]
+    # optimizer_parameters = [
+    #     {
+    #         "params": [
+    #             p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
+    #         ],
+    #         "weight_decay": 0.001,
+    #     },
+    #     {
+    #         "params": [
+    #             p for n, p in param_optimizer if any(nd in n for nd in no_decay)
+    #         ],
+    #         "weight_decay": 0.0,
+    #     },
+    # ]
+    #
+    # num_train_steps = int(len(train_set) / config.BATCH_SIZE * config.NUM_EPOCHS)
+    # optimizer = AdamW(optimizer_parameters, lr=config.LR)
+    # scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=num_train_steps)
 
     train_model(bert_model, criterion, optimizer, scheduler, train_loader, test_loader,
                 print_every=config.PRINT_EVERY, n_epochs=config.NUM_EPOCHS, device=device,

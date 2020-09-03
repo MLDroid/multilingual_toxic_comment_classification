@@ -54,7 +54,7 @@ NUM_CPU_WORKERS = psutil.cpu_count()
 PRINT_EVERY = 100
 SAVE_EVERY = 5
 
-BERT_LAYER_FREEZE = True
+BERT_LAYER_FREEZE = False
 
 MULTIGPU = True if torch.cuda.device_count() > 1 else False #when using xlarge vs 16x large AWS m/c
 

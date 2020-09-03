@@ -18,10 +18,15 @@ class bert_classifier(nn.Module):
                 p.requires_grad = False
 
         # Classification layer
-        self.fc = nn.Linear(config.CONTEXT_VECTOR_SIZE, 2) #using a simple softmax classifier with one FC layer
+        self.fc1 = nn.Linear(config.CONTEXT_VECTOR_SIZE, 100) #using a simple softmax classifier with one FC layer
+        self.fc2 = nn.Linear(100, 2) #using a simple softmax classifier with one FC layer
 
         #Dropout
         self.dp20 = nn.Dropout(0.2)
+
+        #non linear functions
+        self.relu = nn.ReLU()
+        self.log_softmax = nn.LogSoftmax(dim=1)
 
 
     def forward(self, seq, attn_masks):
@@ -40,6 +45,11 @@ class bert_classifier(nn.Module):
         op = self.dp20(op)
 
         # Feeding op to the classifier layer
-        logits = self.fc(op)
+        op = self.relu(self.fc1(op))
+        op = self.dp20(op)
+        logits = self.fc2(op)
+
+        logits = self.log_softmax(logits)
+
 
         return logits
